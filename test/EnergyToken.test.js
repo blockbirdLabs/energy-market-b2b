@@ -33,21 +33,21 @@ contract('EnergyToken', accounts => {
   })
 
   it.only('energy escrow', async () => {
+    const escrow = await EnergyEscrow.new(token.address,{ from: creator });
 
     const producer = accounts[1];
     const consumer = accounts[2];
 
     await token.mint(producer,0);
     await token.mint(producer,1);
-    console.log('OWNER:',await token.ownerOf(0), '\tCONSUMER:',consumer)
-    await token.approve(consumer,0); // THIS IS FAILING!!!
-    console.log('APPROVED:',await token.getApproved(0))
+    // approve escrow as a contract that allows doing transfers
+    await token.approve(escrow.address, 0, { from: producer });
 
-    escrow = await EnergyEscrow.new(token.address,{ from: creator });
     const depositValue = 10;
-    const tx = await escrow.createPayment(0,consumer,{ from: producer,value: depositValue })
-    let escrowBalance = await web3.eth.getBalance(escrow.address);
-    assert.equal(escrowBalance,depositValue)
+    // consumer (or market book order pays into escrow)
+    const tx = await escrow.createPayment(0,consumer,{ from: consumer, value: depositValue })
+    let escrowETHBalance = await web3.eth.getBalance(escrow.address);
+    assert.equal(escrowETHBalance,depositValue)
   })
 
 })
