@@ -32,7 +32,7 @@ contract('EnergyToken', accounts => {
     assert.equal(balanceOf1.toNumber(), 1);
   })
 
-  it.only('energy escrow', async () => {
+  it('energy escrow', async () => {
     const escrow = await EnergyEscrow.new(token.address,{ from: creator });
 
     const producer = accounts[1];
