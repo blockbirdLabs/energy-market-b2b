@@ -15,7 +15,7 @@ contract Market {
     struct Order {
         uint256 id;
         address owner;
-        uint256 _type;
+        uint256 action;
         uint256 state;
         uint256 quantity;
         uint256 product;
@@ -27,7 +27,7 @@ contract Market {
     }
      
     enum State { Open, Close, Canceled }
-    enum Type { Buy, Sell }
+    enum Action { Buy, Sell }
     enum Product { Day, Week, Month }
 
     struct Offer {
@@ -37,15 +37,82 @@ contract Market {
         uint256 unsafeCreatedTimestamp;
     }
 
+    // Checks if the order exist.
+    modifier orderExist(uint _orderId) {
+        require(orderCount >= _orderId);
+        _;
+    }
+
+    // Checks if offer exist.
+    modifier offerExist(uint _orderId, uint _offerId) {
+        require(orders[_orderId].offerCount >= _offerId);
+        _;
+    }
+
+    // Checks if @param _address is the owner of the order.
+    modifier isOrderOwner(uint _orderId, address _address) {
+        require(orders[_orderId].owner == _address);
+        _;
+    }
+
+    // Checks if the order is in Open state.
+    modifier isOpen(uint _orderId) {
+        require(orders[_orderId].state == uint(State.Open));
+        _;
+    }
+
     // Stops the execution if stopped is true
     modifier stop_if_emergency() {
         require(!stopped);
         _;
     }
 
-    function getOrder(uint _orderId) public view 
+    /**
+    * @dev Adds an order on the orders persistent storage
+    * @param _action uint256 Order action, it can only be Buy or Sell
+    * @param _quantity uint256 Order quantity in MW/h
+    * @param _product uint256 Order product, it can only be Day, Week or Month
+    */
+    function submitOrder(uint256 _action, uint256 _quantity, uint256 _product) 
+        public 
+        stop_if_emergency() 
     {
-        
+        // TODO: Check if the action is present in enum Action
+        // TODO: Check if the product is present in enum Product
+        orderCount = orderCount.add(1);
+
+        Order memory order;
+        order.id = orderCount;
+        order.owner = msg.sender;
+        order.action = _action;
+        order.state = uint(State.Open);
+        order.quantity = _quantity;
+        order.product = _product;
+        // This timestamp will not be used for critical contract logic, only as reference
+        order.unsafeCreatedTimestamp = block.timestamp;
+        order.offerCount = 0;
+        order.isEnergyDelivered = false;
+
+        orders[orderCount] = order;
+    }
+
+    function getOrder(uint _orderId) 
+        public view
+        orderExist(_orderId) 
+        returns (uint, address, uint, uint, uint, uint, uint, uint, bool)
+    {
+        Order storage order = orders[_orderId];
+        return(
+            order.id,
+            order.owner,
+            order.action,
+            order.state,
+            order.quantity,
+            order.product,
+            order.unsafeCreatedTimestamp,
+            order.offerCount,
+            order.isEnergyDelivered
+        );
     }
 
     /** 
@@ -56,16 +123,17 @@ contract Market {
         return orderCount;
     }
 
-    function cancelOrder(uint256 _orderId) public 
+    /**
+    * @dev Cancel the order only if in Open state
+    * @param _orderId uint256 The order ID
+    */
+    function cancelOrder(uint256 _orderId) 
+        public
+        orderExist(_orderId)
+        isOrderOwner(_orderId, msg.sender)
+        isOpen(_orderId)
     {
-        
-    }
-
-    function submitOrder(uint256 _type, uint256 _product, uint256 _quantity) 
-        public 
-        stop_if_emergency() 
-    {
-        
+        orders[_orderId].state = uint(State.Canceled);
     }
 
     function submitOffer(uint256 _oderId, uint256 _price) 
