@@ -7,6 +7,7 @@
     "start": "ng serve",
     "build": "ng build",
     "test": "ng test --watch=false",
+    "test-contract": "truffle test",
     "lint": "ng lint",
     "e2e": "ng e2e"
   },
@@ -26,7 +27,7 @@
     "@angular/router": "^5.2.9",
     "bs58": "^4.0.1",
     "core-js": "^2.5.4",
-    "openzeppelin-solidity": "1.12.0",
+    "openzeppelin-solidity": "^1.12.0",
     "rxjs": "^5.5.8",
     "truffle": "^4.1.14",
     "web3": "1.0.0-beta.34",
