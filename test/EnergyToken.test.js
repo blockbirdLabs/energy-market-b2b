@@ -28,11 +28,11 @@ contract('EnergyToken', accounts => {
   });
 
   it('mint and burn coin', async () => {
-    await token.mint(producer.address);
-    await token.mint(producer.address);
+    await token.mint(producer.address, 'descriptionA');
+    await token.mint(producer.address, 'descriptionB');
     let totalSupply = await token.totalSupply();
     assert.equal(totalSupply, 2);
-    await token.mint(consumer.address);
+    await token.mint(consumer.address, 'descriptionC');
     totalSupply = await token.totalSupply();
     assert.equal(totalSupply, 3);
     let balanceOf2 = await token.balanceOf(consumer.address)
@@ -48,7 +48,7 @@ contract('EnergyToken', accounts => {
   it('energy escrow deposit', async () => {
     const escrow = await EnergyEscrow.new(token.address,{ from: creator.address });
 
-    await token.mint(producer.address);
+    await token.mint(producer.address, 'descriptionA');
     // approve escrow as a contract that allows doing transfers
     await token.approve(escrow.address, 0, { from: producer.address });
 
@@ -61,10 +61,10 @@ contract('EnergyToken', accounts => {
     assert.equal(escrowTokenBalance,1) // check escrow token balance
   })
 
-  it.only('energy escrow withdraw', async () => {
+  it('energy escrow withdraw', async () => {
     const escrow = await EnergyEscrow.new(token.address,{ from: creator.address });
 
-    await token.mint(producer.address);
+    await token.mint(producer.address, 'descriptionA');
     // approve escrow as a contract that allows doing transfers
     await token.approve(escrow.address, 0, { from: producer.address });
 
