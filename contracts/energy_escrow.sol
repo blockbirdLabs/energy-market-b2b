@@ -1,6 +1,6 @@
 pragma solidity ^0.4.24;
 
-import 'openzeppelin-solidity/contracts/token/ERC721/ERC721.sol';
+import './energy_token.sol';
 import 'openzeppelin-solidity/contracts/token/ERC721/ERC721Holder.sol';
 
 // Contract responsible for holding funds and tokens (and rewarding or penalizing if energy is not produced)
@@ -9,6 +9,7 @@ import 'openzeppelin-solidity/contracts/token/ERC721/ERC721Holder.sol';
 // it exchanges EnergyTokens for ETH for simplicity, but we would probably want to have our own token
 contract EnergyEscrow is ERC721Holder {
   event PaymentCreation(uint256 tokenId, address producer, address distributor, address comsumer, uint value);
+  event Withdraw(uint256 tokenId, address producer, address distributor, address comsumer, uint value);
   enum PaymentStatus { Pending, Completed, Refunded }
   struct Payment {
     address producer;
@@ -20,9 +21,9 @@ contract EnergyEscrow is ERC721Holder {
 
   // orderId => Payment
   mapping(uint256 => Payment) public payments;
-  ERC721 public energyToken;
+  EnergyToken public energyToken;
 
-  constructor(ERC721 _energyToken) public {
+  constructor(EnergyToken _energyToken) public {
     energyToken = _energyToken;
   }
 
@@ -31,9 +32,17 @@ contract EnergyEscrow is ERC721Holder {
     address producer = energyToken.ownerOf(_tokenId);
     uint value = msg.value;
     if(msg.value == 0) { revert("Need to send some funds"); }
-    energyToken.safeTransferFrom(producer, address(this), _tokenId); // THIS IS FAILING DO TO NOT BEING APPROVED
+    energyToken.safeTransferFrom(producer, address(this), _tokenId); 
     payments[_tokenId] = Payment(producer, _distributor, _consumer, value, PaymentStatus.Pending);
     emit PaymentCreation(_tokenId, producer, _distributor, _consumer, value);
+  }
+
+  function withdrawPayment(uint256 _tokenId) public {
+    Payment memory p = payments[_tokenId];
+    p.producer.transfer(p.value); // pay the producer
+    energyToken.burn(_tokenId); // burns the token so that this 
+    delete payments[_tokenId]; // delete payment mapping
+    emit Withdraw(_tokenId, p.producer, p.distributor, p.consumer, p.value);
   }
 
   function testRecovery(bytes32 h, uint8 v, bytes32 r, bytes32 s) public pure returns (address) {

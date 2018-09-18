@@ -28,11 +28,11 @@ contract('EnergyToken', accounts => {
   });
 
   it('mint and burn coin', async () => {
-    await token.mint(producer.address,0);
-    await token.mint(producer.address,1);
+    await token.mint(producer.address);
+    await token.mint(producer.address);
     let totalSupply = await token.totalSupply();
     assert.equal(totalSupply, 2);
-    await token.mint(consumer.address,2);
+    await token.mint(consumer.address);
     totalSupply = await token.totalSupply();
     assert.equal(totalSupply, 3);
     let balanceOf2 = await token.balanceOf(consumer.address)
@@ -48,8 +48,7 @@ contract('EnergyToken', accounts => {
   it('energy escrow deposit', async () => {
     const escrow = await EnergyEscrow.new(token.address,{ from: creator.address });
 
-    await token.mint(producer.address,0);
-    await token.mint(producer.address,1);
+    await token.mint(producer.address);
     // approve escrow as a contract that allows doing transfers
     await token.approve(escrow.address, 0, { from: producer.address });
 
@@ -58,9 +57,44 @@ contract('EnergyToken', accounts => {
     const tx = await escrow.createPayment(0, distributor.address,consumer.address,{ from: consumer.address, value: depositValue })
     let escrowETHBalance = await web3Eth.getBalance(escrow.address);
     assert.equal(escrowETHBalance,depositValue)
+    let escrowTokenBalance = await token.balanceOf(escrow.address)
+    assert.equal(escrowTokenBalance,1) // check escrow token balance
   })
 
-  it.only('test signature', async () => {
+  it.only('energy escrow withdraw', async () => {
+    const escrow = await EnergyEscrow.new(token.address,{ from: creator.address });
+
+    await token.mint(producer.address);
+    // approve escrow as a contract that allows doing transfers
+    await token.approve(escrow.address, 0, { from: producer.address });
+
+    const depositValue = 10;
+    // consumer (or market book order pays into escrow)
+    let txParam = { from: consumer.address, value: depositValue };
+    await escrow.createPayment(0,consumer.address, distributor.address, txParam)
+    let escrowETHBalance = await web3Eth.getBalance(escrow.address);
+    assert.equal(escrowETHBalance,depositValue) // check escrow funds balance
+    let escrowTokenBalance = await token.balanceOf(escrow.address)
+    assert.equal(escrowTokenBalance,1) // check escrow token balance
+
+    let producerETHBalanceBeforePayment = await web3Eth.getBalance(producer.address); // producer ETH before
+
+    txParam = { from: consumer.address };
+    await escrow.withdrawPayment(0, txParam)
+
+    escrowETHBalance = await web3Eth.getBalance(escrow.address);
+    assert.equal(escrowETHBalance,0) // check escrow funds balance
+    escrowTokenBalance = await token.balanceOf(escrow.address)
+    assert.equal(escrowTokenBalance,0) // check escrow token balance
+    let producerETHBalance = await web3Eth.getBalance(producer.address);
+    producerETHBalance = Web3Utils
+      .toBN(producerETHBalance)
+      .sub(Web3Utils.toBN(producerETHBalanceBeforePayment))
+      .toString()
+    assert.equal(producerETHBalance,depositValue) // check producer funds balance
+  })
+
+  it('test signature', async () => {
     const tokenId = 0;
     const concatHash = Web3Utils.soliditySha3(tokenId)
     const msg = new Buffer(concatHash.slice(2),16)
