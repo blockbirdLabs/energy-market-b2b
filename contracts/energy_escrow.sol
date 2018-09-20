@@ -41,6 +41,7 @@ contract EnergyEscrow is ERC721Holder {
     bytes32 secret = keccak256(abi.encodePacked(_tokenSecret));
     uint256 tokenId = energyToken.tokenIdByURI(secret);
     Payment memory p = payments[tokenId];
+    require(msg.sender == p.producer, "Producer is the only one able to execute the withdraw");
 
     address addr =verifyHash(secret,producerSig);
     require(addr == p.producer,"failed to verify signature");

@@ -85,10 +85,9 @@ contract('EnergyToken', accounts => {
 
     let producerETHBalanceBeforePayment = await web3Eth.getBalance(producer.address); // producer ETH before
 
-    txParam = { from: consumer.address };
-
     const signature = producer.sign(tokenURI); // producer signs the tokenDescription
-    await escrow.withdrawWithProof(tokenDescription,signature.signature);
+    txParam = {from: producer.address, gasPrice:1} // needed to specify the gasPrice for the test
+    const withdrawTx = await escrow.withdrawWithProof(tokenDescription,signature.signature,txParam);
 
     escrowETHBalance = await web3Eth.getBalance(escrow.address);
     assert.equal(escrowETHBalance,0) // check escrow funds balance
@@ -98,6 +97,7 @@ contract('EnergyToken', accounts => {
     producerETHBalance = Web3Utils
       .toBN(producerETHBalance)
       .sub(Web3Utils.toBN(producerETHBalanceBeforePayment))
+      .add(Web3Utils.toBN(withdrawTx.receipt.gasUsed))
       .toString()
     assert.equal(producerETHBalance,depositValue) // check producer funds balance
   })
