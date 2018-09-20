@@ -8,13 +8,11 @@ contract('EnergyToken', accounts => {
 
   const creatorPrivateKey = '0x1546e1a27353b3ab3dce3d94faf150cd1f5b86c25c04ae8191d13ec7a844e479'
   const producerPrivateKey = '0xc35fd6f2aace6e3e62f02844c846fe5a4837b8230d53ca3d417af64cb7c20457'
-  const consumerPrivateKey = '0xc9099835a49ba3fff15f14ce62bbdbf464768a57b7a212291c9251d8306108e4'
   const supplierPrivateKey = '0x169187e44a8231cfd22b25e393b542fecb93b03dead9806540aab5dcb6959b73'
 
   const web3Eth = new Web3Eth(web3.currentProvider);
   const creator = web3Eth.accounts.privateKeyToAccount(creatorPrivateKey);
   const producer = web3Eth.accounts.privateKeyToAccount(producerPrivateKey)
-  const consumer = web3Eth.accounts.privateKeyToAccount(consumerPrivateKey)
   const supplier = web3Eth.accounts.privateKeyToAccount(supplierPrivateKey)
 
   let token;
@@ -32,10 +30,10 @@ contract('EnergyToken', accounts => {
     await token.mint(producer.address, 'descriptionB');
     let totalSupply = await token.totalSupply();
     assert.equal(totalSupply, 2);
-    await token.mint(consumer.address, 'descriptionC');
+    await token.mint(supplier.address, 'descriptionC');
     totalSupply = await token.totalSupply();
     assert.equal(totalSupply, 3);
-    let balanceOf2 = await token.balanceOf(consumer.address)
+    let balanceOf2 = await token.balanceOf(supplier.address)
     assert.equal(balanceOf2.toNumber(), 1);
 
     const tokenId = await token.tokenIdByURI.call('descriptionA');
@@ -55,8 +53,7 @@ contract('EnergyToken', accounts => {
     await token.approve(escrow.address, tokenId, { from: producer.address });
 
     const depositValue = 10;
-    // consumer (or market book order pays into escrow)
-    const tx = await escrow.createPayment(tokenId, supplier.address,consumer.address,{ from: consumer.address, value: depositValue })
+    const tx = await escrow.createPayment(tokenId, supplier.address,{ from: supplier.address, value: depositValue })
     let escrowETHBalance = await web3Eth.getBalance(escrow.address);
     assert.equal(escrowETHBalance,depositValue)
     let escrowTokenBalance = await token.balanceOf(escrow.address)
@@ -75,9 +72,9 @@ contract('EnergyToken', accounts => {
     await token.approve(escrow.address, tokenId, { from: producer.address });
 
     const depositValue = 10;
-    // consumer (or market book order pays into escrow)
-    let txParam = { from: consumer.address, value: depositValue };
-    await escrow.createPayment(tokenId,consumer.address, supplier.address, txParam)
+    // supplier (or market book order pays into escrow)
+    let txParam = { from: supplier.address, value: depositValue };
+    await escrow.createPayment(tokenId, supplier.address, txParam)
     let escrowETHBalance = await web3Eth.getBalance(escrow.address);
     assert.equal(escrowETHBalance,depositValue) // check escrow funds balance
     let escrowTokenBalance = await token.balanceOf(escrow.address)

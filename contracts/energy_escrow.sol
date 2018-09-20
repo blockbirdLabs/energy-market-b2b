@@ -8,13 +8,12 @@ import 'openzeppelin-solidity/contracts/token/ERC721/ERC721Holder.sol';
 // get rewarded for energy production
 // it exchanges EnergyTokens for ETH for simplicity, but we would probably want to have our own token
 contract EnergyEscrow is ERC721Holder {
-  event PaymentCreation(uint256 tokenId, address producer, address supplier, address comsumer, uint value);
-  event Withdraw(uint256 tokenId, address producer, address supplier, address comsumer, uint value);
+  event PaymentCreation(uint256 tokenId, address producer, address supplier, uint value);
+  event Withdraw(uint256 tokenId, address producer, address supplier, uint value);
   enum PaymentStatus { Pending, Completed, Refunded }
   struct Payment {
     address producer;
     address supplier;
-    address consumer;
     uint value;
     PaymentStatus status;
   }
@@ -27,14 +26,13 @@ contract EnergyEscrow is ERC721Holder {
     energyToken = _energyToken;
   }
 
-  // need to specify consumer since this will be executed by the order book contract
-  function createPayment(uint256 _tokenId, address _consumer, address _supplier) external payable {
+  function createPayment(uint256 _tokenId, address _supplier) external payable {
     address producer = energyToken.ownerOf(_tokenId);
     uint value = msg.value;
     if(msg.value == 0) { revert("Need to send some funds"); }
     energyToken.safeTransferFrom(producer, address(this), _tokenId); 
-    payments[_tokenId] = Payment(producer, _supplier, _consumer, value, PaymentStatus.Pending);
-    emit PaymentCreation(_tokenId, producer, _supplier, _consumer, value);
+    payments[_tokenId] = Payment(producer, _supplier, value, PaymentStatus.Pending);
+    emit PaymentCreation(_tokenId, producer, _supplier, value);
   }
 
   function withdrawWithProof(string _tokenSecret, bytes producerSig) public {
@@ -71,6 +69,6 @@ contract EnergyEscrow is ERC721Holder {
     p.producer.transfer(p.value); // pay the producer
     energyToken.burn(tokenId); // burns the token so that this 
     delete payments[tokenId]; // delete payment mapping
-    emit Withdraw(tokenId, p.producer, p.supplier, p.consumer, p.value);
+    emit Withdraw(tokenId, p.producer, p.supplier, p.value);
   }
 }
