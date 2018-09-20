@@ -97,5 +97,7 @@ contract('EnergyToken', accounts => {
       .add(Web3Utils.toBN(withdrawTx.receipt.gasUsed))
       .toString()
     assert.equal(producerETHBalance,depositValue) // check producer funds balance
+    const supplierTokenBalance = await token.balanceOf(supplier.address)
+    assert.equal(supplierTokenBalance,1) // check supplier token balance
   })
 })

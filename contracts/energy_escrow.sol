@@ -64,11 +64,12 @@ contract EnergyEscrow is ERC721Holder {
     return addr;
   }
 
-  function withdrawPayment(uint256 tokenId) private {
-    Payment memory p = payments[tokenId];
+  function withdrawPayment(uint256 _tokenId) private {
+    Payment memory p = payments[_tokenId];
     p.producer.transfer(p.value); // pay the producer
-    energyToken.burn(tokenId); // burns the token so that this 
-    delete payments[tokenId]; // delete payment mapping
-    emit Withdraw(tokenId, p.producer, p.supplier, p.value);
+    // energyToken.burn(tokenId); // burns the token so that this 
+    energyToken.safeTransferFrom(address(this), p.supplier,  _tokenId); 
+    delete payments[_tokenId]; // delete payment mapping
+    emit Withdraw(_tokenId, p.producer, p.supplier, p.value);
   }
 }
