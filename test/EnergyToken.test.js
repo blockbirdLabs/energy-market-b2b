@@ -6,6 +6,8 @@ const EnergyEscrow = artifacts.require('EnergyEscrow');
 
 contract('EnergyToken', accounts => {
 
+  // ganache mnemonic
+  //   firm laugh oppose example joy soda book syrup gate laundry disagree right
   const creatorPrivateKey = '0x1546e1a27353b3ab3dce3d94faf150cd1f5b86c25c04ae8191d13ec7a844e479'
   const producerPrivateKey = '0xc35fd6f2aace6e3e62f02844c846fe5a4837b8230d53ca3d417af64cb7c20457'
   const supplierPrivateKey = '0x169187e44a8231cfd22b25e393b542fecb93b03dead9806540aab5dcb6959b73'
