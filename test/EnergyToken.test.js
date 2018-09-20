@@ -13,9 +13,9 @@ contract('EnergyToken', accounts => {
   const supplierPrivateKey = '0x169187e44a8231cfd22b25e393b542fecb93b03dead9806540aab5dcb6959b73'
 
   const web3Eth = new Web3Eth(web3.currentProvider);
-  const creator = web3Eth.accounts.privateKeyToAccount(creatorPrivateKey);
-  const producer = web3Eth.accounts.privateKeyToAccount(producerPrivateKey)
-  const supplier = web3Eth.accounts.privateKeyToAccount(supplierPrivateKey)
+  const creator = web3Eth.accounts.wallet.add(creatorPrivateKey); // web3Eth.accounts.privateKeyToAccount(creatorPrivateKey);
+  const producer = web3Eth.accounts.wallet.add(producerPrivateKey); // web3Eth.accounts.privateKeyToAccount(producerPrivateKey)
+  const supplier = web3Eth.accounts.wallet.add(supplierPrivateKey); // web3Eth.accounts.privateKeyToAccount(supplierPrivateKey)
 
   let token;
   beforeEach(async function () {
