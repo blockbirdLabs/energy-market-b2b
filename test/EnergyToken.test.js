@@ -9,13 +9,13 @@ contract('EnergyToken', accounts => {
   const creatorPrivateKey = '0x1546e1a27353b3ab3dce3d94faf150cd1f5b86c25c04ae8191d13ec7a844e479'
   const producerPrivateKey = '0xc35fd6f2aace6e3e62f02844c846fe5a4837b8230d53ca3d417af64cb7c20457'
   const consumerPrivateKey = '0xc9099835a49ba3fff15f14ce62bbdbf464768a57b7a212291c9251d8306108e4'
-  const distributorPrivateKey = '0x169187e44a8231cfd22b25e393b542fecb93b03dead9806540aab5dcb6959b73'
+  const supplierPrivateKey = '0x169187e44a8231cfd22b25e393b542fecb93b03dead9806540aab5dcb6959b73'
 
   const web3Eth = new Web3Eth(web3.currentProvider);
   const creator = web3Eth.accounts.privateKeyToAccount(creatorPrivateKey);
   const producer = web3Eth.accounts.privateKeyToAccount(producerPrivateKey)
   const consumer = web3Eth.accounts.privateKeyToAccount(consumerPrivateKey)
-  const distributor = web3Eth.accounts.privateKeyToAccount(distributorPrivateKey)
+  const supplier = web3Eth.accounts.privateKeyToAccount(supplierPrivateKey)
 
   let token;
   beforeEach(async function () {
@@ -38,7 +38,8 @@ contract('EnergyToken', accounts => {
     let balanceOf2 = await token.balanceOf(consumer.address)
     assert.equal(balanceOf2.toNumber(), 1);
 
-    await token.burn(0);
+    const tokenId = await token.tokenIdByURI.call('descriptionA');
+    await token.burn(tokenId);
      totalSupply = await token.totalSupply();
     assert.equal(totalSupply, 2);
     const balanceOf1 = await token.balanceOf(producer.address)
@@ -49,12 +50,13 @@ contract('EnergyToken', accounts => {
     const escrow = await EnergyEscrow.new(token.address,{ from: creator.address });
 
     await token.mint(producer.address, 'descriptionA');
+    const tokenId = await token.tokenIdByURI.call('descriptionA');
     // approve escrow as a contract that allows doing transfers
-    await token.approve(escrow.address, 0, { from: producer.address });
+    await token.approve(escrow.address, tokenId, { from: producer.address });
 
     const depositValue = 10;
     // consumer (or market book order pays into escrow)
-    const tx = await escrow.createPayment(0, distributor.address,consumer.address,{ from: consumer.address, value: depositValue })
+    const tx = await escrow.createPayment(tokenId, supplier.address,consumer.address,{ from: consumer.address, value: depositValue })
     let escrowETHBalance = await web3Eth.getBalance(escrow.address);
     assert.equal(escrowETHBalance,depositValue)
     let escrowTokenBalance = await token.balanceOf(escrow.address)
@@ -64,14 +66,18 @@ contract('EnergyToken', accounts => {
   it('energy escrow withdraw', async () => {
     const escrow = await EnergyEscrow.new(token.address,{ from: creator.address });
 
-    await token.mint(producer.address, 'descriptionA');
+    const tokenDescription = 'descriptionA';
+    const tokenURI = Web3Utils.soliditySha3(tokenDescription)
+    await token.mint(producer.address, tokenURI);
+
+     const tokenId = await token.tokenIdByURI(tokenURI);
     // approve escrow as a contract that allows doing transfers
-    await token.approve(escrow.address, 0, { from: producer.address });
+    await token.approve(escrow.address, tokenId, { from: producer.address });
 
     const depositValue = 10;
     // consumer (or market book order pays into escrow)
     let txParam = { from: consumer.address, value: depositValue };
-    await escrow.createPayment(0,consumer.address, distributor.address, txParam)
+    await escrow.createPayment(tokenId,consumer.address, supplier.address, txParam)
     let escrowETHBalance = await web3Eth.getBalance(escrow.address);
     assert.equal(escrowETHBalance,depositValue) // check escrow funds balance
     let escrowTokenBalance = await token.balanceOf(escrow.address)
@@ -80,7 +86,9 @@ contract('EnergyToken', accounts => {
     let producerETHBalanceBeforePayment = await web3Eth.getBalance(producer.address); // producer ETH before
 
     txParam = { from: consumer.address };
-    await escrow.withdrawPayment(0, txParam)
+
+    const signature = producer.sign(tokenURI); // producer signs the tokenDescription
+    await escrow.withdrawWithProof(tokenDescription,signature.signature);
 
     escrowETHBalance = await web3Eth.getBalance(escrow.address);
     assert.equal(escrowETHBalance,0) // check escrow funds balance
@@ -92,21 +100,5 @@ contract('EnergyToken', accounts => {
       .sub(Web3Utils.toBN(producerETHBalanceBeforePayment))
       .toString()
     assert.equal(producerETHBalance,depositValue) // check producer funds balance
-  })
-
-  it('test signature', async () => {
-    const tokenId = 0;
-    const concatHash = Web3Utils.soliditySha3(tokenId)
-    const msg = new Buffer(concatHash.slice(2),16)
-
-    const prefix = new Buffer("\x19Ethereum Signed Message:\n");
-    const signature = producer.sign(msg);
-
-    const prefixedMsg = Web3Utils.sha3(Buffer.concat([prefix, new Buffer(String(msg.length)), msg]));
-
-    const escrow = await EnergyEscrow.new(token.address,{ from: creator.address });
-    const recoveredAddr = await escrow.testRecovery.call(prefixedMsg,signature.v,signature.r,signature.s)
-
-    assert.equal(producer.address.toLowerCase(),recoveredAddr.toLowerCase())
   })
 })
