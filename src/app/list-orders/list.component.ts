@@ -1,17 +1,25 @@
 import { Component, OnInit, ViewChild } from '@angular/core';
-import { MatPaginator, MatTableDataSource, MatDialog } from '@angular/material';
+import {
+  MatSnackBar,
+  MatPaginator,
+  MatTableDataSource,
+  MatDialog
+} from '@angular/material';
 import { ListOffersComponent } from '../list-offers/list-offers.component';
 import { CreateOffersComponent } from '../create-offers/create-offers.component';
+import { Web3Service } from '../util/web3.service';
+import { MarketService } from '../util/market.service';
 
 export interface Order {
-  type: string;
   id: number;
-  origin: string;
+  owner: string;
+  action: string;
+  state: string;
   quantity: number;
   product: string;
-  created: string;
-  offersCount: number;
-  state: string;
+  unsafeCreatedTimestamp: Date;
+  offerCount: number;
+  isEnergyDelivered: boolean;
 }
 
 @Component({
@@ -20,23 +28,31 @@ export interface Order {
   styleUrls: ['./list.component.css']
 })
 export class ListOrdersComponent implements OnInit {
+  orders: Order[];
+  market: any;
+  account: string;
   displayedColumns = [
-    'type',
     'id',
-    'created',
+    'action',
+    'unsafeCreatedTimestamp',
     'product',
     'quantity',
-    'origin',
-    'offersCount',
+    'owner',
+    'offerCount',
     'seeOffers',
     'placeOffer'
   ];
-  dataSource = new MatTableDataSource<Order>(ORDER_DATA);
+  dataSource = new MatTableDataSource<Order>(this.orders);
 
   @ViewChild(MatPaginator)
   paginator: MatPaginator;
 
-  constructor(public dialog: MatDialog) {}
+  constructor(
+    private matSnackBar: MatSnackBar,
+    private web3Service: Web3Service,
+    private marketService: MarketService,
+    public dialog: MatDialog
+  ) {}
 
   /**
    * Set the paginator after the view init since this component will
@@ -46,7 +62,97 @@ export class ListOrdersComponent implements OnInit {
     this.dataSource.paginator = this.paginator;
   }
 
-  ngOnInit() {}
+  ngOnInit() {
+    this.watchAccount();
+    this.setContract();
+  }
+
+  watchAccount() {
+    this.web3Service.accountsObservable.subscribe(accounts => {
+      this.account = accounts[0];
+    });
+  }
+
+  async setContract() {
+    try {
+      const contract = await this.web3Service.artifactsToContract(
+        this.web3Service.marketArtifacts
+      );
+      this.market = await contract.deployed();
+      this.getOrders();
+      this.watchEvents();
+    } catch (e) {
+      console.log(e);
+      this.setStatus(e.message + ' See log for more info');
+    }
+  }
+
+  watchEvents() {
+    const newOrderEvent = this.market.NewOrder({
+      _from: this.web3Service.web3.eth.coinbase
+    });
+    newOrderEvent.watch((e, result) => {
+      if (e) {
+        console.log(e);
+        this.setStatus(e.message + ' See log for more info');
+      }
+      const orderId = result.args.orderId.toNumber();
+      console.log(`New Order with ID: ${orderId}`);
+      this.addOrder(orderId);
+    });
+  }
+
+  async addOrder(id) {
+    try {
+      const index = this.orders.findIndex(order => order.id === id);
+      if (index === -1) {
+        // The order do not exist, we can add it
+        const newOrder = await this.getOrder(id);
+        this.orders.push(newOrder);
+        this.dataSource = new MatTableDataSource<Order>(this.orders);
+      }
+    } catch (e) {
+      console.log(e);
+      this.setStatus(e.message + ' See log for more info');
+    }
+  }
+
+  async getOrders() {
+    console.log('Get orders...');
+    this.orders = [];
+    try {
+      const noOrders = await this.market.getOrderCount();
+      console.log(`We have ${noOrders} orders`);
+      for (let i = 1; i <= noOrders.toNumber(); i++) {
+        this.addOrder(i);
+      }
+      this.orders.reverse();
+      this.dataSource = new MatTableDataSource<Order>(this.orders);
+    } catch (e) {
+      console.log(e);
+      this.setStatus(e.message + ' See log for more info');
+    }
+  }
+
+  async getOrder(id) {
+    try {
+      const order = await this.market.getOrder.call(id);
+      return {
+        id: order[0].toNumber(),
+        owner: order[1],
+        action: this.marketService.getAction(order[2].toNumber()),
+        state: this.marketService.getState(order[3].toNumber()),
+        quantity: order[4].toNumber(),
+        product: this.marketService.getProduct(order[5].toNumber()),
+        unsafeCreatedTimestamp: this.marketService.getDate(order[6].toNumber()),
+        offerCount: order[7].toNumber(),
+        isEnergyDelivered: order[8]
+      };
+    } catch (e) {
+      console.log(e);
+      this.setStatus(e.message + ' See log for more info');
+    }
+  }
 
   openListOffers(order): void {
     const dialogRef = this.dialog.open(ListOffersComponent, {
@@ -65,87 +171,8 @@ export class ListOrdersComponent implements OnInit {
       }
     });
   }
-}
 
-const ORDER_DATA: Order[] = [
-  {
-    type: 'Buy',
-    id: 1,
-    origin: 'Coopérnico',
-    quantity: 10,
-    product: 'Day ahead',
-    created: '09/09/18',
-    offersCount: 2,
-    state: 'Open'
-  },
-  {
-    type: 'Buy',
-    id: 2,
-    origin: 'Coopérnico',
-    quantity: 10,
-    product: 'Day ahead',
-    created: '09/09/18',
-    offersCount: 2,
-    state: 'Open'
-  },
-  {
-    type: 'Buy',
-    id: 3,
-    origin: 'Coopérnico',
-    quantity: 10,
-    product: 'Day ahead',
-    created: '09/09/18',
-    offersCount: 2,
-    state: 'Open'
-  },
-  {
-    type: 'Buy',
-    id: 4,
-    origin: 'Coopérnico',
-    quantity: 10,
-    product: 'Day ahead',
-    created: '09/09/18',
-    offersCount: 2,
-    state: 'Open'
-  },
-  {
-    type: 'Buy',
-    id: 5,
-    origin: 'Coopérnico',
-    quantity: 10,
-    product: 'Day ahead',
-    created: '09/09/18',
-    offersCount: 2,
-    state: 'Open'
-  },
-  {
-    type: 'Buy',
-    id: 6,
-    origin: 'Coopérnico',
-    quantity: 10,
-    product: 'Day ahead',
-    created: '09/09/18',
-    offersCount: 2,
-    state: 'Open'
-  },
-  {
-    type: 'Buy',
-    id: 7,
-    origin: 'Coopérnico',
-    quantity: 10,
-    product: 'Day ahead',
-    created: '09/09/18',
-    offersCount: 2,
-    state: 'Open'
-  },
-  {
-    type: 'Buy',
-    id: 8,
-    origin: 'Coopérnico',
-    quantity: 10,
-    product: 'Day ahead',
-    created: '09/09/18',
-    offersCount: 2,
-    state: 'Open'
+  setStatus(status) {
+    this.matSnackBar.open(status, null, { duration: 5000 });
   }
-];
+}

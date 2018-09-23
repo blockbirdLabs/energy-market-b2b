@@ -4,9 +4,9 @@
   <mat-table #table [dataSource]="dataSource">
 
     <!-- Type Column -->
-    <ng-container matColumnDef="type">
+    <ng-container matColumnDef="action">
       <mat-header-cell *matHeaderCellDef> Type </mat-header-cell>
-      <mat-cell *matCellDef="let order"> {{order.type}} </mat-cell>
+      <mat-cell *matCellDef="let order"> {{order.action}} </mat-cell>
     </ng-container>
 
     <!-- Order Ref. Column -->
@@ -16,9 +16,9 @@
     </ng-container>
 
     <!-- Created Column -->
-    <ng-container matColumnDef="created">
+    <ng-container matColumnDef="unsafeCreatedTimestamp">
       <mat-header-cell *matHeaderCellDef> Created at </mat-header-cell>
-      <mat-cell *matCellDef="let order"> {{order.created}} </mat-cell>
+      <mat-cell *matCellDef="let order"> {{order.unsafeCreatedTimestamp | date}} </mat-cell>
     </ng-container>
 
     <!-- Product Column -->
@@ -34,15 +34,15 @@
     </ng-container>
 
     <!-- Origin Column -->
-    <ng-container matColumnDef="origin">
+    <ng-container matColumnDef="owner">
       <mat-header-cell *matHeaderCellDef> Origin </mat-header-cell>
-      <mat-cell *matCellDef="let order"> {{order.origin}} </mat-cell>
+      <mat-cell *matCellDef="let order"> {{order.owner}} </mat-cell>
     </ng-container>
 
     <!-- No. Offers Column -->
-    <ng-container matColumnDef="offersCount">
+    <ng-container matColumnDef="offerCount">
       <mat-header-cell *matHeaderCellDef> No. Offers </mat-header-cell>
-      <mat-cell *matCellDef="let order"> {{order.offersCount}} </mat-cell>
+      <mat-cell *matCellDef="let order"> {{order.offerCount}} </mat-cell>
     </ng-container>
 
     <!-- See Offers Column -->
