@@ -1,7 +1,16 @@
-<mat-toolbar color="primary">B2B Energy Market</mat-toolbar>
+<mat-toolbar color="primary">Energy Market</mat-toolbar>
 
 <!--<app-oracle></app-oracle>-->
 
-<app-create-orders></app-create-orders>
+<app-create-orders [isPublic]="isPublic"></app-create-orders>
 
-<app-list-orders></app-list-orders>
+<app-list-orders [isPublic]="isPublic"></app-list-orders>
+
+<div class="go-public">
+  <button mat-button color="primary" *ngIf="!isPublic" (click)="goPublic()">
+    GO PUBLIC
+  </button>
+  <button mat-button color="primary" *ngIf="isPublic" (click)="goPublic()">
+    GO PRIVATE
+  </button>
+</div>

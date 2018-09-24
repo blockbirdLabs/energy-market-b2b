@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, Input } from '@angular/core';
 import { MarketService } from '../util/market.service';
 import { MatSnackBar } from '@angular/material';
 import { Web3Service } from '../util/web3.service';
@@ -9,12 +9,17 @@ import { Web3Service } from '../util/web3.service';
   styleUrls: ['./create.component.css']
 })
 export class CreateOrdersComponent implements OnInit {
+  @Input()
+  isPublic;
+
   market: any;
   account: string;
+  isProducer: boolean;
   userInput = {
     quantity: 0
   };
   submittingOrder = false;
+  balance = 0;
 
   constructor(
     private web3Service: Web3Service,
@@ -28,8 +33,21 @@ export class CreateOrdersComponent implements OnInit {
   }
 
   watchAccount() {
-    this.web3Service.accountsObservable.subscribe(accounts => {
+    this.web3Service.accountsObservable.subscribe(async accounts => {
       this.account = accounts[0];
+      this.isProducer = this.marketService.isProducer(this.account);
+      try {
+        const web3 = this.web3Service.web3;
+        const balance = await this.web3Service.web3.eth.getBalance(
+          this.account
+        );
+        this.balance = web3.utils.fromWei(balance);
+        const ethPrice = await this.marketService.getEthPrice();
+        this.balance *= ethPrice;
+      } catch (e) {
+        console.error(e);
+        this.setStatus(e.message + ' See log for more info');
+      }
     });
   }
 
@@ -82,6 +100,10 @@ export class CreateOrdersComponent implements OnInit {
   setQuantity(e) {
     console.log('Setting quantity to: ' + e.target.value);
     this.userInput.quantity = e.target.value;
+  }
+
+  doSomething(e) {
+    console.log(e.value);
   }
 
   setStatus(status) {

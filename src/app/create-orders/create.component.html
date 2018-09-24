@@ -1,19 +1,33 @@
-<mat-card class="margin">
-  <mat-card-header>Place a sell order</mat-card-header>
-  <mat-card-content class="new-order">
-    <!--<mat-form-field>
-      <mat-select placeholder="Desired Product">
-        <mat-option value="1">Day ahead</mat-option>
-        <mat-option value="1">Week ahead</mat-option>
-        <mat-option value="1">Month ahead</mat-option>
-      </mat-select>
-    </mat-form-field>-->
-    <mat-form-field>
-      <input type="number" matInput id="bounty" placeholder="Estimated Production (MW/h)" (change)="setQuantity($event)">
-    </mat-form-field>
-    <button [disabled]="submittingOrder" mat-raised-button color="primary" (click)="submitOrder()">
-      PLACE ORDER
-    </button>
-    <mat-progress-bar *ngIf="submittingOrder" mode="indeterminate"></mat-progress-bar>
-  </mat-card-content>
-</mat-card>
+<div *ngIf="!isPublic">
+  <mat-card class="margin" *ngIf="account">
+    <mat-list>
+      <mat-list-item>Company: {{ account | accountAddress }}</mat-list-item>
+      <mat-divider></mat-divider>
+      <mat-list-item>Balance: {{ balance | currency: 'EUR' }}</mat-list-item>
+      <mat-divider></mat-divider>
+    </mat-list>
+  </mat-card>
+  <mat-card class="margin" *ngIf="isProducer">
+    <mat-card-header>Place a sell order</mat-card-header>
+    <mat-card-content class="new-order">
+      <mat-form-field>
+        <mat-select placeholder="Market" (selectionChange)="doSomething($event)">
+          <mat-option value="0">Spot</mat-option>
+          <mat-option value="1">Futures</mat-option>
+        </mat-select>
+      </mat-form-field>
+      <mat-form-field>
+        <mat-select placeholder="Desired Product">
+          <mat-option value="0">Day ahead</mat-option>
+        </mat-select>
+      </mat-form-field>
+      <mat-form-field>
+        <input type="number" matInput id="bounty" placeholder="Estimated Production (MW/h)" (change)="setQuantity($event)">
+      </mat-form-field>
+      <button [disabled]="submittingOrder" mat-raised-button color="primary" (click)="submitOrder()">
+        PLACE ORDER
+      </button>
+      <mat-progress-bar *ngIf="submittingOrder" mode="indeterminate"></mat-progress-bar>
+    </mat-card-content>
+  </mat-card>
+</div>

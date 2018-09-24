@@ -163,6 +163,7 @@ contract Market is Ownable, Destructible {
         public payable 
         stop_if_emergency()
     {
+        // TODO: Order owner cannot place an offer in his own order
         Order storage order = orders[_orderId];
         // Only possible to submit an Offer when an order state is Open
         require(order.state == uint(State.Open), "Order is not open to offers");

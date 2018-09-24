@@ -29,6 +29,7 @@ import { ListOrdersComponent } from './list-orders/list.component';
 import { CreateOrdersComponent } from './create-orders/create.component';
 import { CreateOffersComponent } from './create-offers/create-offers.component';
 import { ListOffersComponent } from './list-offers/list-offers.component';
+import { AccountAddressPipe } from './account-address.pipe';
 
 @NgModule({
   declarations: [
@@ -37,7 +38,8 @@ import { ListOffersComponent } from './list-offers/list-offers.component';
     ListOrdersComponent,
     CreateOrdersComponent,
     CreateOffersComponent,
-    ListOffersComponent
+    ListOffersComponent,
+    AccountAddressPipe
   ],
   imports: [
     BrowserAnimationsModule,

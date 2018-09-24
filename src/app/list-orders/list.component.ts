@@ -1,11 +1,14 @@
-import { Component, OnInit, ViewChild } from '@angular/core';
+import { Component, OnInit, ViewChild, Input } from '@angular/core';
 import {
   MatSnackBar,
   MatPaginator,
   MatTableDataSource,
   MatDialog
 } from '@angular/material';
-import { ListOffersComponent } from '../list-offers/list-offers.component';
+import {
+  ListOffersComponent,
+  Offer
+} from '../list-offers/list-offers.component';
 import { CreateOffersComponent } from '../create-offers/create-offers.component';
 import { Web3Service } from '../util/web3.service';
 import { MarketService } from '../util/market.service';
@@ -20,6 +23,7 @@ export interface Order {
   unsafeCreatedTimestamp: Date;
   offerCount: number;
   isEnergyDelivered: boolean;
+  acceptedOffer: Offer;
 }
 
 @Component({
@@ -28,20 +32,14 @@ export interface Order {
   styleUrls: ['./list.component.css']
 })
 export class ListOrdersComponent implements OnInit {
+  @Input()
+  isPublic;
+
+  isProducer: boolean;
   orders: Order[];
   market: any;
   account: string;
-  displayedColumns = [
-    'id',
-    'action',
-    'unsafeCreatedTimestamp',
-    'product',
-    'quantity',
-    'owner',
-    'offerCount',
-    'seeOffers',
-    'placeOffer'
-  ];
+  displayedColumns = [];
   dataSource = new MatTableDataSource<Order>(this.orders);
 
   @ViewChild(MatPaginator)
@@ -70,6 +68,31 @@ export class ListOrdersComponent implements OnInit {
   watchAccount() {
     this.web3Service.accountsObservable.subscribe(accounts => {
       this.account = accounts[0];
+      this.isProducer = this.marketService.isProducer(this.account);
+      if (this.isProducer) {
+        this.displayedColumns = [
+          'id',
+          'action',
+          'unsafeCreatedTimestamp',
+          'product',
+          'quantity',
+          'owner',
+          'offerCount',
+          'seeOffers'
+        ];
+      } else {
+        this.displayedColumns = [
+          'id',
+          'action',
+          'unsafeCreatedTimestamp',
+          'product',
+          'quantity',
+          'owner',
+          'offerCount',
+          'seeOffers',
+          'placeOffer'
+        ];
+      }
     });
   }
 
@@ -146,7 +169,8 @@ export class ListOrdersComponent implements OnInit {
         product: this.marketService.getProduct(order[5].toNumber()),
         unsafeCreatedTimestamp: this.marketService.getDate(order[6].toNumber()),
         offerCount: order[7].toNumber(),
-        isEnergyDelivered: order[8]
+        isEnergyDelivered: order[8],
+        acceptedOffer: undefined
       };
     } catch (e) {
       console.log(e);
@@ -158,7 +182,8 @@ export class ListOrdersComponent implements OnInit {
     const dialogRef = this.dialog.open(ListOffersComponent, {
       width: '900px',
       data: {
-        order: order
+        order: order,
+        account: this.account
       }
     });
   }
@@ -167,7 +192,9 @@ export class ListOrdersComponent implements OnInit {
     const dialogRef = this.dialog.open(CreateOffersComponent, {
       width: '500px',
       data: {
-        order: order
+        order: order,
+        account: this.account,
+        market: this.market
       }
     });
   }

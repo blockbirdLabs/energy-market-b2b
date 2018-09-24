@@ -2,14 +2,36 @@
 
 <mat-dialog-content>
 
+  <mat-list>
+    <mat-list-item>Producer: {{ order.owner | accountAddress }}</mat-list-item>
+    <mat-divider></mat-divider>
+    <mat-list-item>Spot Market</mat-list-item>
+    <mat-divider></mat-divider>
+    <mat-list-item>Day ahead</mat-list-item>
+    <mat-divider></mat-divider>
+    <mat-list-item>Quantity: {{ order.quantity }} MWh</mat-list-item>
+    <mat-divider></mat-divider>
+  </mat-list>
+
+  <div *ngIf="order.state === 'Close' || order.state === 'Canceled'">
+    <br>
+    <br>
+    <h2 mat-dialog-title>Accepted Offer</h2>
+
+    <mat-list *ngIf="order.acceptedOffer">
+      <mat-list-item>Supplier: {{ order.acceptedOffer.owner | accountAddress }}</mat-list-item>
+      <mat-divider></mat-divider>
+      <mat-list-item>Price: {{ order.acceptedOffer.price }} €</mat-list-item>
+      <mat-divider></mat-divider>
+    </mat-list>
+
+    <br>
+    <br>
+    <h2 mat-dialog-title>History of Offers</h2>
+  </div>
+
   <div class="table-container mat-elevation-z8">
     <mat-table #table [dataSource]="dataSource">
-
-      <!-- Type Column -->
-      <ng-container matColumnDef="type">
-        <mat-header-cell *matHeaderCellDef> Type </mat-header-cell>
-        <mat-cell *matCellDef="let offer"> {{offer.type}} </mat-cell>
-      </ng-container>
 
       <!-- offer Ref. Column -->
       <ng-container matColumnDef="id">
@@ -17,22 +39,22 @@
         <mat-cell *matCellDef="let offer"> {{offer.id}} </mat-cell>
       </ng-container>
 
-      <!-- Created Column -->
-      <ng-container matColumnDef="created">
-        <mat-header-cell *matHeaderCellDef> Created at </mat-header-cell>
-        <mat-cell *matCellDef="let offer"> {{offer.created}} </mat-cell>
+      <!-- Type Column -->
+      <ng-container matColumnDef="type">
+        <mat-header-cell *matHeaderCellDef> Type </mat-header-cell>
+        <mat-cell *matCellDef="let offer"> Buy </mat-cell>
       </ng-container>
 
-      <!-- Product Column -->
-      <ng-container matColumnDef="product">
-        <mat-header-cell *matHeaderCellDef> Product </mat-header-cell>
-        <mat-cell *matCellDef="let offer"> {{offer.product}} </mat-cell>
+      <!-- Created Column -->
+      <ng-container matColumnDef="unsafeCreatedTimestamp">
+        <mat-header-cell *matHeaderCellDef> Created at </mat-header-cell>
+        <mat-cell *matCellDef="let offer"> {{offer.unsafeCreatedTimestamp | date}} </mat-cell>
       </ng-container>
 
       <!-- Quantity Column -->
       <ng-container matColumnDef="quantity">
         <mat-header-cell *matHeaderCellDef> Quantity </mat-header-cell>
-        <mat-cell *matCellDef="let offer"> {{offer.quantity}} MW/h</mat-cell>
+        <mat-cell *matCellDef="let offer"> {{offer.quantity}} MWh</mat-cell>
       </ng-container>
 
       <!-- Price Column -->
@@ -42,9 +64,19 @@
       </ng-container>
 
       <!-- Origin Column -->
-      <ng-container matColumnDef="origin">
+      <ng-container matColumnDef="owner">
         <mat-header-cell *matHeaderCellDef> Origin </mat-header-cell>
-        <mat-cell *matCellDef="let offer"> {{offer.origin}} </mat-cell>
+        <mat-cell *matCellDef="let offer"> {{offer.owner | accountAddress}} </mat-cell>
+      </ng-container>
+
+      <!-- Accept Offer Column -->
+      <ng-container matColumnDef="acceptOffer">
+        <mat-header-cell *matHeaderCellDef></mat-header-cell>
+        <mat-cell *matCellDef="let offer">
+          <button mat-stroked-button color="primary" (click)="accept(offer)">
+            ACCEPT OFFER
+          </button>
+        </mat-cell>
       </ng-container>
 
       <mat-header-row *matHeaderRowDef="displayedColumns"></mat-header-row>
